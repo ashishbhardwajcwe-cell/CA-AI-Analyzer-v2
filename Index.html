@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRO Contract Analyzer — AI-Powered</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Instrument+Serif&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
+<style>
+/* ═══════ DESIGN SYSTEM ═══════ */
+:root {
+  --bg-0: #08090C;
+  --bg-1: #0E1017;
+  --bg-2: #151820;
+  --bg-3: #1C2030;
+  --bg-4: #242838;
+  --border-1: #252A3A;
+  --border-2: #333952;
+  --border-focus: #5B8DEF;
+
+  --text-0: #F0F2F8;
+  --text-1: #C8CDD8;
+  --text-2: #8890A4;
+  --text-3: #5C6478;
+
+  --blue: #5B8DEF;
+  --blue-dim: rgba(91,141,239,0.12);
+  --blue-border: rgba(91,141,239,0.3);
+
+  --red: #EF5B5B;
+  --red-dim: rgba(239,91,91,0.1);
+  --red-border: rgba(239,91,91,0.25);
+
+  --orange: #EFA05B;
+  --orange-dim: rgba(239,160,91,0.1);
+  --orange-border: rgba(239,160,91,0.25);
+
+  --yellow: #DFCF4F;
+  --yellow-dim: rgba(223,207,79,0.1);
+  --yellow-border: rgba(223,207,79,0.25);
+
+  --green: #5BEF8D;
+  --green-dim: rgba(91,239,141,0.1);
+  --green-border: rgba(91,239,141,0.25);
+
+  --cyan: #5BD4EF;
+  --cyan-dim: rgba(91,212,239,0.1);
+
+  --radius: 8px;
+  --radius-lg: 14px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+  background: var(--bg-0);
+  color: var(--text-0);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-1); border-radius: 3px; }
+
+/* ═══════ HEADER ═══════ */
+.header {
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border-1);
+  padding: 0 28px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  backdrop-filter: blur(12px);
+}
+
+.logo {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, #5B8DEF 0%, #5BD4EF 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: var(--bg-0);
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+
+.header-text h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px; font-weight: 400;
+  letter-spacing: -0.3px;
+}
+.header-text span {
+  font-size: 10px; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.btn-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-1);
+  background: var(--bg-2);
+  color: var(--text-2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 16px;
+}
+.btn-icon:hover { border-color: var(--border-2); color: var(--text-0); background: var(--bg-3); }
+
+.api-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex; align-items: center; gap: 6px;
+}
+.api-status.connected { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-border); }
+.api-status.disconnected { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-border); }
+.api-status .dot { width: 6px; height: 6px; border-radius: 50%; }
+.api-status.connected .dot { background: var(--green); }
+.api-status.disconnected .dot { background: var(--red); }
+
+/* ═══════ SETTINGS MODAL ═══════ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 500;
+  display: none;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  width: 560px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-1);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-header h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 20px; font-weight: 400;
+}
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 8px; border: none;
+  background: var(--bg-3); color: var(--text-2);
+  cursor: pointer; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.modal-close:hover { background: var(--bg-4); color: var(--text-0); }
+
+.modal-body { padding: 24px; }
+
+.form-group { margin-bottom: 20px; }
+.form-label {
+  display: block;
+  font-size: 12px; font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+.form-hint {
+  font-size: 11px; color: var(--text-3);
+  margin-top: 6px; line-height: 1.5;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius);
+  color: var(--text-0);
+  font-size: 13px;
+  font-family: 'IBM Plex Mono', 'IBM Plex Sans', monospace;
+  transition: border-color 0.2s;
+}
+.form-input:focus { outline: none; border-color: var(--blue); }
+.form-input::placeholder { color: var(--text-3); }
+
+.form-select {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius);
+  color: var(--text-0);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235C6478' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+.form-select:focus { outline: none; border-color: var(--blue); }
+.form-select option { background: var(--bg-2); }
+
+.btn-save {
+  width: 100%;
+  padding: 12px;
+  background: var(--blue);
+  color: var(--bg-0);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-save:hover { filter: brightness(1.1); }
+
+.api-test-result {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  display: none;
+}
+.api-test-result.success { display: block; background: var(--green-dim); color: var(--green); border: 1px solid var(--green-border); }
+.api-test-result.error { display: block; background: var(--red-dim); color: var(--red); border: 1px solid var(--red-border); }
+
+/* ═══════ MAIN LAYOUT ═══════ */
+.main { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+/* ═══════ UPLOAD AREA ═══════ */
+.section-head {
+  margin-bottom: 24px;
+}
+.section-head h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px; font-weight: 400;
+  margin-bottom: 6px;
+}
+.section-head p { color: var(--text-2); font-size: 14px; max-width: 700px; }
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.upload-card {
+  background: var(--bg-2);
+  border: 1.5px dashed var(--border-1);
+  border-radius: var(--radius);
+  padding: 22px 14px 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.upload-card:hover { border-color: var(--blue); background: var(--bg-3); transform: translateY(-1px); }
+.upload-card.uploaded { border-style: solid; border-color: var(--green-border); background: var(--green-dim); }
+.upload-card .icon { font-size: 24px; margin-bottom: 6px; }
+.upload-card .label { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+.upload-card .hint { font-size: 10px; color: var(--text-3); }
+.upload-card .filename {
+  font-size: 10px; color: var(--green); margin-top: 6px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.upload-card input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.divider-text {
+  text-align: center; color: var(--text-3); font-size: 11px;
+  margin: 16px 0; position: relative;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.divider-text::before, .divider-text::after {
+  content: ''; position: absolute; top: 50%;
+  width: calc(50% - 24px); height: 1px; background: var(--border-1);
+}
+.divider-text::before { left: 0; } .divider-text::after { right: 0; }
+
+.text-area {
+  width: 100%; min-height: 140px;
+  background: var(--bg-2); border: 1px solid var(--border-1);
+  border-radius: var(--radius); padding: 14px;
+  font-size: 13px; font-family: inherit;
+  color: var(--text-0); resize: vertical;
+  transition: border-color 0.2s;
+  margin-bottom: 20px;
+}
+.text-area:focus { outline: none; border-color: var(--blue); }
+.text-area::placeholder { color: var(--text-3); }
+
+/* Analysis Controls */
+.analysis-controls {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.btn-analyze {
+  background: linear-gradient(135deg, #5B8DEF, #5BD4EF);
+  color: var(--bg-0); border: none;
+  padding: 13px 32px; border-radius: var(--radius);
+  font-size: 14px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  transition: all 0.25s;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 4px 20px rgba(91,141,239,0.25);
+}
+.btn-analyze:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(91,141,239,0.35); }
+.btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-secondary {
+  background: var(--bg-3); border: 1px solid var(--border-1);
+  padding: 12px 20px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 500; font-family: inherit;
+  color: var(--text-1); cursor: pointer; transition: all 0.2s;
+}
+.btn-secondary:hover { background: var(--bg-4); border-color: var(--border-2); }
+
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.2); border-top-color: var(--bg-0); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════ PROGRESS / LIVE LOG ═══════ */
+.analysis-progress {
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 28px;
+  display: none;
+}
+.analysis-progress.active { display: block; }
+
+.progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.progress-header h3 { font-size: 14px; font-weight: 600; }
+.progress-pct { font-size: 13px; color: var(--blue); font-weight: 600; }
+
+.progress-track {
+  height: 4px; background: var(--bg-0); border-radius: 2px;
+  overflow: hidden; margin-bottom: 16px;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  border-radius: 2px; transition: width 0.5s ease;
+}
+
+.progress-log {
+  background: var(--bg-0);
+  border: 1px solid var(--border-1);
+  border-radius: 6px;
+  padding: 12px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--text-2);
+}
+.log-entry { display: flex; gap: 8px; }
+.log-time { color: var(--text-3); flex-shrink: 0; }
+.log-msg { color: var(--text-1); }
+.log-entry.success .log-msg { color: var(--green); }
+.log-entry.error .log-msg { color: var(--red); }
+.log-entry.warn .log-msg { color: var(--orange); }
+
+/* ═══════ RESULTS ═══════ */
+.results { display: none; }
+.results.active { display: block; }
+
+/* Score Banner */
+.score-banner {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 24px;
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.score-circle-wrap { text-align: center; }
+.score-circle {
+  width: 130px; height: 130px;
+  margin: 0 auto 10px; position: relative;
+}
+.score-circle svg { transform: rotate(-90deg); }
+.score-circle .track { fill: none; stroke: var(--bg-0); stroke-width: 7; }
+.score-circle .value-arc { fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 1.5s ease; }
+.score-num {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.score-num .big {
+  font-family: 'Instrument Serif', serif;
+  font-size: 34px; line-height: 1;
+}
+.score-num .sm { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
+.verdict-text { font-size: 14px; font-weight: 600; }
+.verdict-desc { font-size: 11px; color: var(--text-2); }
+
+.score-details { display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-1);
+}
+.stat-row:last-child { border: none; }
+.stat-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.stat-label { font-size: 13px; flex: 1; color: var(--text-1); }
+.stat-value { font-size: 13px; font-weight: 600; min-width: 24px; text-align: right; }
+
+/* Summary Metrics */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.metric-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); margin-bottom: 8px; }
+.metric-value {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px; margin-bottom: 2px;
+}
+.metric-desc { font-size: 11px; color: var(--text-2); }
+
+/* Filter Tabs */
+.filter-bar {
+  display: flex; gap: 3px; flex-wrap: wrap;
+  background: var(--bg-1);
+  padding: 3px; border-radius: 8px;
+  margin-bottom: 18px;
+}
+.filter-tab {
+  padding: 7px 14px; border-radius: 6px;
+  font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+  color: var(--text-2); border: none;
+  background: none; font-family: inherit;
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.filter-tab:hover { color: var(--text-0); background: var(--bg-3); }
+.filter-tab.active { background: var(--blue); color: var(--bg-0); }
+.filter-count {
+  font-size: 9px; font-weight: 700;
+  padding: 1px 5px; border-radius: 6px;
+  background: rgba(255,255,255,0.15);
+}
+.filter-tab:not(.active) .filter-count { background: var(--bg-0); }
+
+/* Finding Cards */
+.findings-container { display: flex; flex-direction: column; gap: 10px; }
+
+.finding-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius);
+  transition: all 0.2s;
+  overflow: hidden;
+}
+.finding-card:hover { border-color: var(--border-2); }
+
+.finding-main {
+  padding: 16px 18px;
+  cursor: pointer;
+}
+
+.finding-meta {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-3);
+}
+
+.sev {
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.sev-critical { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-border); }
+.sev-high { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--orange-border); }
+.sev-medium { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow-border); }
+.sev-low { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue-border); }
+
+.finding-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.finding-body { font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
+
+.finding-expand {
+  display: none;
+  padding: 0 18px 18px;
+  border-top: 1px solid var(--border-1);
+  margin-top: 0;
+}
+.finding-card.open .finding-expand { display: block; padding-top: 16px; }
+
+.detail-block { margin-bottom: 14px; }
+.detail-heading {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-3); margin-bottom: 4px;
+}
+.detail-content { font-size: 12.5px; color: var(--text-1); line-height: 1.7; }
+
+.rec-box {
+  background: var(--blue-dim);
+  border: 1px solid var(--blue-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.rec-box .detail-heading { color: var(--blue); }
+
+.clause-tag {
+  display: inline-flex; padding: 2px 8px;
+  background: var(--bg-0); border-radius: 4px;
+  font-size: 10px; font-weight: 600;
+  color: var(--cyan); margin: 2px 3px 2px 0;
+}
+
+.finding-tags {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+}
+.ftag {
+  font-size: 9px; padding: 2px 7px;
+  border-radius: 4px; background: var(--bg-0);
+  color: var(--text-3); border: 1px solid var(--border-1);
+}
+
+/* Export */
+.export-row {
+  display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+}
+
+/* ═══════ RESPONSIVE ═══════ */
+@media (max-width: 768px) {
+  .main { padding: 16px; }
+  .score-banner { grid-template-columns: 1fr; }
+  .upload-grid { grid-template-columns: 1fr 1fr; }
+  .header { padding: 0 14px; }
+}
+
+@media (max-width: 480px) {
+  .upload-grid { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: 1fr; }
+}
+
+/* Animations */
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+.fade-up { animation: fadeUp 0.5s ease forwards; }
+.d1 { animation-delay: 0.05s; opacity: 0; }
+.d2 { animation-delay: 0.1s; opacity: 0; }
+.d3 { animation-delay: 0.15s; opacity: 0; }
+.d4 { animation-delay: 0.2s; opacity: 0; }
+</style>
+</head>
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<div class="header">
+  <div class="logo">BRO</div>
+  <div class="header-text">
+    <h1>Contract Analyzer</h1>
+    <span>AI-Powered · Border Roads Organisation</span>
+  </div>
+  <div class="header-actions">
+    <div class="api-status disconnected" id="apiStatus">
+      <div class="dot"></div>
+      <span id="apiStatusText">API Not Set</span>
+    </div>
+    <button class="btn-icon" onclick="openSettings()" title="API Settings">⚙️</button>
+  </div>
+</div>
+
+<!-- ═══════ SETTINGS MODAL ═══════ -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>API Configuration</h2>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">AI Provider</label>
+        <select class="form-select" id="aiProvider" onchange="onProviderChange()">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI (GPT-4)</option>
+          <option value="gemini">Google (Gemini)</option>
+        </select>
+        <div class="form-hint">Select the AI provider for contract analysis. Claude is recommended for best results.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input type="password" class="form-input" id="apiKeyInput" placeholder="sk-ant-api03-... or sk-..." autocomplete="off">
+        <div class="form-hint">
+          Your API key is stored locally in your browser only. It is never sent to any server other than the AI provider's API.<br>
+          <strong>Anthropic:</strong> Get key at <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--blue);">console.anthropic.com</a><br>
+          <strong>OpenAI:</strong> Get key at <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--blue);">platform.openai.com</a><br>
+          <strong>Google:</strong> Get key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--blue);">aistudio.google.com</a>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Model</label>
+        <select class="form-select" id="aiModel">
+          <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Recommended)</option>
+          <option value="claude-opus-4-20250514">Claude Opus 4 (Most Capable)</option>
+          <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Fastest)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Analysis Depth</label>
+        <select class="form-select" id="analysisDepth">
+          <option value="comprehensive">Comprehensive (Multi-pass, ~3 min)</option>
+          <option value="standard">Standard (Single-pass, ~1 min)</option>
+          <option value="quick">Quick Scan (~30 sec)</option>
+        </select>
+        <div class="form-hint">Comprehensive analysis runs multiple specialized passes: legal clauses, BOQ/technical, arbitration, financial, and timeline analysis.</div>
+      </div>
+
+      <button class="btn-save" onclick="saveSettings()" id="saveSettingsBtn">Save & Test Connection</button>
+      <div class="api-test-result" id="apiTestResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MAIN ═══════ -->
+<div class="main">
+  <!-- Upload Section -->
+  <div id="uploadSection">
+    <div class="section-head fade-up">
+      <h2>Analyze Contract Agreement</h2>
+      <p>Upload BRO contract documents or paste text. The AI will perform deep analysis for loopholes, exploitable clauses, BOQ deficiencies, arbitration risks, IRC non-compliance, and timeline vulnerabilities.</p>
+    </div>
+
+    <div class="upload-grid fade-up d1">
+      <div class="upload-card" id="card-agreement">
+        <div class="icon">📄</div>
+        <div class="label">Contract Agreement</div>
+        <div class="hint">PDF / DOC / TXT</div>
+        <div class="filename" id="fn-agreement"></div>
+        <input type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this,'agreement')">
+      </div>
+      <div class="upload-card" id="card-boq">
+        <div class="icon">📊</div>
+        <div class="label">Bill of Quantities</div>
+        <div class="hint">BOQ / Schedule</div>
+        <div class="filename" id="fn-boq"></div>
+        <input type="file" accept=".pdf,.doc,.docx,.txt,.xlsx,.csv" onchange="handleFile(this,'boq')">
+      </div>
+      <div class="upload-card" id="card-gcc">
+        <div class="icon">📋</div>
+        <div class="label">General Conditions</div>
+        <div class="hint">GCC</div>
+        <div class="filename" id="fn-gcc"></div>
+        <input type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this,'gcc')">
+      </div>
+      <div class="upload-card" id="card-scc">
+        <div class="icon">📌</div>
+        <div class="label">Special Conditions</div>
+        <div class="hint">SCC</div>
+        <div class="filename" id="fn-scc"></div>
+        <input type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this,'scc')">
+      </div>
+      <div class="upload-card" id="card-specs">
+        <div class="icon">🔧</div>
+        <div class="label">Technical Specs</div>
+        <div class="hint">Drawings / Specs</div>
+        <div class="filename" id="fn-specs"></div>
+        <input type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this,'specs')">
+      </div>
+      <div class="upload-card" id="card-other">
+        <div class="icon">📎</div>
+        <div class="label">Other Documents</div>
+        <div class="hint">Addendum / Corrigendum</div>
+        <div class="filename" id="fn-other"></div>
+        <input type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this,'other')">
+      </div>
+    </div>
+
+    <div class="divider-text fade-up d2">or paste text</div>
+
+    <textarea class="text-area fade-up d2" id="pasteText" placeholder="Paste contract agreement text, BOQ details, General Conditions, Special Conditions, or specific clauses you want analyzed...&#10;&#10;Tip: For best results, include the full contract text with all clause numbers."></textarea>
+
+    <div class="analysis-controls fade-up d3">
+      <button class="btn-analyze" id="analyzeBtn" onclick="startAnalysis()">
+        <span id="analyzeBtnText">Analyze Contract</span>
+        <div class="spinner" id="analyzeBtnSpinner" style="display:none"></div>
+      </button>
+      <button class="btn-secondary" onclick="loadSample()">Load Sample Contract</button>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="analysis-progress" id="analysisProgress">
+    <div class="progress-header">
+      <h3>🔍 AI Analysis in Progress</h3>
+      <span class="progress-pct" id="progPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progFill"></div>
+    </div>
+    <div class="progress-log" id="progLog"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="resultsSection">
+    <!-- Score -->
+    <div class="score-banner fade-up" id="scoreBanner"></div>
+
+    <!-- Metrics -->
+    <div class="metrics-row fade-up d1" id="metricsRow"></div>
+
+    <!-- Export -->
+    <div class="export-row fade-up d2">
+      <button class="btn-secondary" onclick="exportFullReport()">📄 Export Report</button>
+      <button class="btn-secondary" onclick="exportCSV()">📊 Export CSV</button>
+      <button class="btn-secondary" onclick="window.print()">🖨️ Print</button>
+      <button class="btn-secondary" onclick="reAnalyze()">🔄 Re-Analyze</button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar fade-up d3" id="filterBar"></div>
+
+    <!-- Findings -->
+    <div class="findings-container fade-up d4" id="findingsContainer"></div>
+  </div>
+</div>
+
+<script>
+// ═══════ STATE ═══════
+const APP = {
+  apiKey: localStorage.getItem('bro_api_key') || '',
+  provider: localStorage.getItem('bro_provider') || 'anthropic',
+  model: localStorage.getItem('bro_model') || 'claude-sonnet-4-20250514',
+  depth: localStorage.getItem('bro_depth') || 'comprehensive',
+  files: {},
+  fileTexts: {},
+  findings: [],
+  score: 0,
+  rawAIResponse: '',
+  analyzing: false
+};
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  updateAPIStatus();
+  document.getElementById('aiProvider').value = APP.provider;
+  document.getElementById('aiModel').value = APP.model;
+  document.getElementById('analysisDepth').value = APP.depth;
+  if (APP.apiKey) document.getElementById('apiKeyInput').value = APP.apiKey;
+  onProviderChange();
+});
+
+// ═══════ SETTINGS ═══════
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('active');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('active');
+}
+
+function onProviderChange() {
+  const p = document.getElementById('aiProvider').value;
+  const modelSelect = document.getElementById('aiModel');
+  modelSelect.innerHTML = '';
+
+  if (p === 'anthropic') {
+    addOpt(modelSelect, 'claude-sonnet-4-20250514', 'Claude Sonnet 4 (Recommended)');
+    addOpt(modelSelect, 'claude-opus-4-20250514', 'Claude Opus 4 (Most Capable)');
+    addOpt(modelSelect, 'claude-haiku-4-5-20251001', 'Claude Haiku 4.5 (Fastest)');
+  } else if (p === 'openai') {
+    addOpt(modelSelect, 'gpt-4o', 'GPT-4o (Recommended)');
+    addOpt(modelSelect, 'gpt-4-turbo', 'GPT-4 Turbo');
+    addOpt(modelSelect, 'gpt-4o-mini', 'GPT-4o Mini (Fastest)');
+  } else if (p === 'gemini') {
+    addOpt(modelSelect, 'gemini-2.0-flash', 'Gemini 2.0 Flash (Recommended)');
+    addOpt(modelSelect, 'gemini-1.5-pro', 'Gemini 1.5 Pro');
+  }
+}
+function addOpt(sel, val, text) {
+  const o = document.createElement('option');
+  o.value = val; o.textContent = text;
+  sel.appendChild(o);
+}
+
+async function saveSettings() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const provider = document.getElementById('aiProvider').value;
+  const model = document.getElementById('aiModel').value;
+  const depth = document.getElementById('analysisDepth').value;
+
+  if (!key) {
+    showTestResult('error', 'Please enter an API key.');
+    return;
+  }
+
+  APP.apiKey = key;
+  APP.provider = provider;
+  APP.model = model;
+  APP.depth = depth;
+
+  localStorage.setItem('bro_api_key', key);
+  localStorage.setItem('bro_provider', provider);
+  localStorage.setItem('bro_model', model);
+  localStorage.setItem('bro_depth', depth);
+
+  // Test connection
+  const btn = document.getElementById('saveSettingsBtn');
+  btn.textContent = 'Testing...';
+  btn.disabled = true;
+
+  try {
+    const ok = await testAPIConnection();
+    if (ok) {
+      showTestResult('success', '✓ Connection successful! API is working.');
+      updateAPIStatus();
+      setTimeout(closeSettings, 1200);
+    } else {
+      showTestResult('error', '✗ Connection failed. Please check your API key.');
+    }
+  } catch (e) {
+    showTestResult('error', '✗ Error: ' + e.message);
+  }
+
+  btn.textContent = 'Save & Test Connection';
+  btn.disabled = false;
+}
+
+async function testAPIConnection() {
+  try {
+    const res = await callAI('Respond with exactly: OK', 10);
+    return res && res.length > 0;
+  } catch(e) {
+    console.error('API test failed:', e);
+    return false;
+  }
+}
+
+function showTestResult(type, msg) {
+  const el = document.getElementById('apiTestResult');
+  el.className = 'api-test-result ' + type;
+  el.textContent = msg;
+}
+
+function updateAPIStatus() {
+  const el = document.getElementById('apiStatus');
+  const txt = document.getElementById('apiStatusText');
+  if (APP.apiKey) {
+    el.className = 'api-status connected';
+    txt.textContent = APP.provider.charAt(0).toUpperCase() + APP.provider.slice(1) + ' Connected';
+  } else {
+    el.className = 'api-status disconnected';
+    txt.textContent = 'API Not Set';
+  }
+}
+
+// ═══════ FILE HANDLING ═══════
+async function handleFile(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+  APP.files[type] = file;
+  document.getElementById('card-' + type).classList.add('uploaded');
+  document.getElementById('fn-' + type).textContent = file.name;
+
+  // Extract text
+  try {
+    if (file.name.endsWith('.pdf')) {
+      const text = await extractPDFText(file);
+      APP.fileTexts[type] = text;
+    } else {
+      const text = await file.text();
+      APP.fileTexts[type] = text;
+    }
+  } catch(e) {
+    console.error('File read error:', e);
+    APP.fileTexts[type] = '[Could not extract text from ' + file.name + ']';
+  }
+}
+
+async function extractPDFText(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(item => item.str).join(' ');
+    fullText += pageText + '\n\n';
+  }
+  return fullText;
+}
+
+// ═══════ AI API CALL ═══════
+async function callAI(prompt, maxTokens = 4096, systemPrompt = '') {
+  if (!APP.apiKey) throw new Error('API key not configured');
+
+  if (APP.provider === 'anthropic') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': APP.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: APP.model,
+        max_tokens: maxTokens,
+        system: systemPrompt || undefined,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+    const data = await res.json();
+    return data.content.map(c => c.text || '').join('');
+
+  } else if (APP.provider === 'openai') {
+    const messages = [];
+    if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+    messages.push({ role: 'user', content: prompt });
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + APP.apiKey
+      },
+      body: JSON.stringify({
+        model: APP.model,
+        max_tokens: maxTokens,
+        messages
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+    const data = await res.json();
+    return data.choices[0].message.content;
+
+  } else if (APP.provider === 'gemini') {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${APP.model}:generateContent?key=${APP.apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: (systemPrompt ? systemPrompt + '\n\n' : '') + prompt }] }],
+        generationConfig: { maxOutputTokens: maxTokens }
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+  }
+}
+
+// ═══════ ANALYSIS ENGINE ═══════
+
+const SYSTEM_PROMPT = `You are a senior contract law and civil engineering expert specializing in Border Roads Organisation (BRO) contracts under the Indian government. You have deep expertise in:
+
+1. CPWD General Conditions of Contract, MORTH specifications
+2. IRC codes: IRC:37 (Flexible Pavement Design), IRC:SP:73 (Bituminous Surfacing), IRC:SP:42 (Road Drainage), IRC:120, IRC:SP:13 (CD Structures), IRC:SP:89
+3. Arbitration & Conciliation Act 1996 (as amended 2019)
+4. BOQ analysis for road/highway construction
+5. CVC guidelines for government contracts
+6. Common contractor exploitation tactics in government road construction projects
+
+Your task is to analyze the provided contract documents and identify:
+- Loopholes that contractors can exploit
+- Clauses that give unfair advantage to contractors during execution or arbitration
+- BOQ deficiencies (missing items, vague descriptions, lump sum items)
+- IRC/MORTH non-compliance in technical specifications
+- Timeline risks (weak LD clauses, easy EOT, missing milestones)
+- Financial risks (escalation exploitation, advance without security, etc.)
+- Arbitration vulnerabilities
+
+You MUST respond ONLY in valid JSON format. No markdown, no explanation outside JSON.`;
+
+const ANALYSIS_PROMPTS = {
+  loopholes: `Analyze this contract for LOOPHOLES AND EXPLOITABLE CLAUSES that a contractor can take advantage of. Focus on:
+- Vague scope definitions ("as directed", "as required", etc.)
+- Missing or weak variation/change order controls
+- Ambiguous measurement procedures
+- Weak force majeure definitions
+- Missing subletting restrictions
+- No defect liability period
+- Missing termination provisions
+- Any clause where wording gives contractor room to claim extras
+
+Return JSON array of findings:
+[{"id":"LP-XXX","severity":"critical|high|medium|low","category":"loophole","title":"...","clause":"clause reference","body":"detailed description of the issue","impact":"what can go wrong","recommendation":"specific fix","tags":["tag1","tag2"]}]
+
+CONTRACT TEXT:
+`,
+
+  arbitration: `Analyze this contract for ARBITRATION AND DISPUTE RESOLUTION VULNERABILITIES. Focus on:
+- Arbitrator appointment mechanism weaknesses
+- Missing pre-arbitration mediation requirement
+- No counter-claim / set-off provisions
+- Ambiguous jurisdiction
+- Missing time limits for raising claims
+- Weak notice requirements for claims
+- Clauses that favor contractor in dispute scenarios
+- Absence of dispute resolution board
+
+Return JSON array of findings:
+[{"id":"ARB-XXX","severity":"critical|high|medium|low","category":"arbitration","title":"...","clause":"clause reference","body":"detailed description","impact":"what can go wrong","recommendation":"specific fix","tags":["tag1","tag2"]}]
+
+CONTRACT TEXT:
+`,
+
+  boq_technical: `Analyze this contract's BOQ (Bill of Quantities) and TECHNICAL SPECIFICATIONS against IRC norms. Focus on:
+- Missing BOQ items (mobilization, traffic management, dewatering, safety, environmental)
+- Lump sum items without scope definition
+- Missing rate analysis basis
+- Items without clear measurement methodology
+- IRC:37-2018 pavement design compliance
+- IRC:SP:73 bituminous work specifications
+- MORTH Section 400 (granular layers) & 500 (bituminous) compliance
+- Drainage provisions per IRC:SP:42
+- Material testing requirements (NABL accreditation)
+- Items where quantity is likely underestimated (leading to variation claims)
+- Non-standard items where rates can be disputed
+
+Return JSON array of findings:
+[{"id":"BOQ-XXX or IRC-XXX","severity":"critical|high|medium|low","category":"boq|irc","title":"...","clause":"clause/item reference","body":"detailed description","impact":"what can go wrong","recommendation":"specific fix with IRC/MORTH reference","tags":["tag1","tag2"]}]
+
+CONTRACT TEXT:
+`,
+
+  timeline_financial: `Analyze this contract for TIMELINE RISKS and FINANCIAL VULNERABILITIES. Focus on:
+
+TIMELINE:
+- "Time is of the essence" clause present or missing
+- LD clause specifics (rate, calculation, cap)
+- EOT (Extension of Time) provisions - too liberal?
+- Milestone definitions and intermediate LD
+- Working season accounting (monsoon/winter shutdown)
+- Programme/schedule submission requirements
+
+FINANCIAL:
+- Mobilization advance security (bank guarantee requirements)
+- Price escalation formula clarity
+- Retention money provisions
+- Performance security
+- Extra item rate determination methodology
+- Insurance requirements (CAR, Workmen Compensation)
+- Payment certification timeline
+- Running bill processing timeline
+- Interest on delayed payments
+
+Return JSON array of findings:
+[{"id":"TL-XXX or FIN-XXX","severity":"critical|high|medium|low","category":"timeline|financial","title":"...","clause":"clause reference","body":"detailed description","impact":"what can go wrong","recommendation":"specific fix","tags":["tag1","tag2"]}]
+
+CONTRACT TEXT:
+`
+};
+
+// ═══════ ANALYSIS EXECUTION ═══════
+async function startAnalysis() {
+  const pastedText = document.getElementById('pasteText').value.trim();
+  const hasFiles = Object.keys(APP.fileTexts).length > 0;
+
+  if (!pastedText && !hasFiles) {
+    alert('Please upload documents or paste contract text.');
+    return;
+  }
+
+  if (!APP.apiKey) {
+    alert('Please configure your API key first. Click the ⚙️ Settings button.');
+    openSettings();
+    return;
+  }
+
+  // Combine text
+  let contractText = '';
+  const sections = {
+    agreement: '=== CONTRACT AGREEMENT ===',
+    boq: '=== BILL OF QUANTITIES (BOQ) ===',
+    gcc: '=== GENERAL CONDITIONS OF CONTRACT ===',
+    scc: '=== SPECIAL CONDITIONS OF CONTRACT ===',
+    specs: '=== TECHNICAL SPECIFICATIONS ===',
+    other: '=== ADDITIONAL DOCUMENTS ==='
+  };
+
+  for (const [key, header] of Object.entries(sections)) {
+    if (APP.fileTexts[key]) {
+      contractText += '\n\n' + header + '\n' + APP.fileTexts[key];
+    }
+  }
+  if (pastedText) {
+    contractText += '\n\n=== PASTED TEXT ===\n' + pastedText;
+  }
+
+  // Truncate if too long (keep within token limits)
+  const MAX_CHARS = 80000;
+  if (contractText.length > MAX_CHARS) {
+    contractText = contractText.substring(0, MAX_CHARS) + '\n\n[TRUNCATED - Document exceeds analysis limit]';
+  }
+
+  // Start analysis
+  APP.analyzing = true;
+  APP.findings = [];
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  document.getElementById('analyzeBtnText').textContent = 'Analyzing...';
+  document.getElementById('analyzeBtnSpinner').style.display = 'block';
+
+  const prog = document.getElementById('analysisProgress');
+  prog.classList.add('active');
+  document.getElementById('progLog').innerHTML = '';
+
+  try {
+    if (APP.depth === 'comprehensive') {
+      await runComprehensiveAnalysis(contractText);
+    } else if (APP.depth === 'standard') {
+      await runStandardAnalysis(contractText);
+    } else {
+      await runQuickAnalysis(contractText);
+    }
+
+    renderResults();
+    document.getElementById('resultsSection').classList.add('active');
+    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+
+  } catch (e) {
+    addLog('error', 'Analysis failed: ' + e.message);
+    alert('Analysis failed: ' + e.message + '\n\nPlease check your API key and try again.');
+  }
+
+  prog.classList.remove('active');
+  btn.disabled = false;
+  document.getElementById('analyzeBtnText').textContent = 'Re-Analyze Contract';
+  document.getElementById('analyzeBtnSpinner').style.display = 'none';
+  APP.analyzing = false;
+}
+
+async function runComprehensiveAnalysis(text) {
+  const passes = [
+    { key: 'loopholes', label: 'Loopholes & Exploitable Clauses', pct: [0, 25] },
+    { key: 'arbitration', label: 'Arbitration & Dispute Vulnerabilities', pct: [25, 50] },
+    { key: 'boq_technical', label: 'BOQ & IRC Technical Compliance', pct: [50, 75] },
+    { key: 'timeline_financial', label: 'Timeline & Financial Risks', pct: [75, 95] }
+  ];
+
+  addLog('info', 'Starting comprehensive 4-pass analysis...');
+  updateProgress(2);
+
+  for (const pass of passes) {
+    addLog('info', `Pass: ${pass.label}...`);
+    updateProgress(pass.pct[0] + 5);
+
+    try {
+      const prompt = ANALYSIS_PROMPTS[pass.key] + text;
+      const response = await callAI(prompt, 4096, SYSTEM_PROMPT);
+      updateProgress(pass.pct[1] - 5);
+
+      const findings = parseFindings(response);
+      if (findings.length > 0) {
+        APP.findings.push(...findings);
+        addLog('success', `✓ Found ${findings.length} issues in ${pass.label}`);
+      } else {
+        addLog('warn', `No specific issues found in ${pass.label} pass`);
+      }
+    } catch(e) {
+      addLog('error', `Pass failed: ${pass.label} — ${e.message}`);
+    }
+    updateProgress(pass.pct[1]);
+  }
+
+  addLog('success', `Analysis complete! Total findings: ${APP.findings.length}`);
+  updateProgress(100);
+}
+
+async function runStandardAnalysis(text) {
+  addLog('info', 'Starting standard single-pass analysis...');
+  updateProgress(10);
+
+  const combinedPrompt = `Analyze this BRO contract comprehensively for ALL of the following:
+1. Loopholes and exploitable clauses
+2. Arbitration/dispute vulnerabilities  
+3. BOQ deficiencies and IRC non-compliance (IRC:37, IRC:SP:73, MORTH)
+4. Timeline risks (LD, EOT, milestones)
+5. Financial vulnerabilities (escalation, advance, retention, extra items)
+
+Return a single JSON array of ALL findings:
+[{"id":"XX-XXX","severity":"critical|high|medium|low","category":"loophole|arbitration|boq|irc|timeline|financial","title":"...","clause":"clause ref","body":"description","impact":"what can go wrong","recommendation":"fix","tags":["tag1"]}]
+
+CONTRACT TEXT:
+` + text;
+
+  try {
+    const response = await callAI(combinedPrompt, 4096, SYSTEM_PROMPT);
+    updateProgress(80);
+    const findings = parseFindings(response);
+    APP.findings = findings;
+    addLog('success', `✓ Found ${findings.length} issues`);
+  } catch(e) {
+    addLog('error', 'Analysis failed: ' + e.message);
+    throw e;
+  }
+  updateProgress(100);
+}
+
+async function runQuickAnalysis(text) {
+  addLog('info', 'Quick scan starting...');
+  updateProgress(15);
+
+  const quickPrompt = `Quickly scan this BRO contract and identify the TOP 10 most critical issues across loopholes, arbitration risks, BOQ deficiencies, IRC non-compliance, timeline risks, and financial vulnerabilities.
+
+Return JSON array: [{"id":"XX-XXX","severity":"critical|high|medium|low","category":"loophole|arbitration|boq|irc|timeline|financial","title":"...","clause":"clause ref","body":"description","impact":"risk","recommendation":"fix","tags":["tag1"]}]
+
+CONTRACT TEXT:
+` + text.substring(0, 40000);
+
+  try {
+    const response = await callAI(quickPrompt, 3000, SYSTEM_PROMPT);
+    updateProgress(85);
+    APP.findings = parseFindings(response);
+    addLog('success', `✓ Found ${APP.findings.length} critical issues`);
+  } catch(e) {
+    addLog('error', 'Scan failed: ' + e.message);
+    throw e;
+  }
+  updateProgress(100);
+}
+
+function parseFindings(rawText) {
+  try {
+    // Try to find JSON array in response
+    let jsonStr = rawText.trim();
+
+    // Remove markdown code fences if present
+    jsonStr = jsonStr.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+
+    // Find array bounds
+    const start = jsonStr.indexOf('[');
+    const end = jsonStr.lastIndexOf(']');
+    if (start === -1 || end === -1) {
+      console.warn('No JSON array found in response');
+      return [];
+    }
+    jsonStr = jsonStr.substring(start, end + 1);
+
+    const parsed = JSON.parse(jsonStr);
+    if (!Array.isArray(parsed)) return [];
+
+    // Validate and normalize
+    return parsed.filter(f => f.title && f.body).map((f, i) => ({
+      id: f.id || `F-${String(i+1).padStart(3,'0')}`,
+      severity: ['critical','high','medium','low'].includes(f.severity) ? f.severity : 'medium',
+      category: ['loophole','arbitration','boq','irc','timeline','financial'].includes(f.category) ? f.category : 'loophole',
+      title: f.title,
+      clause: f.clause || 'Not specified',
+      body: f.body,
+      impact: f.impact || 'Potential risk to department interests.',
+      recommendation: f.recommendation || 'Review and amend this clause.',
+      tags: Array.isArray(f.tags) ? f.tags : []
+    }));
+  } catch(e) {
+    console.error('Parse error:', e, rawText.substring(0, 200));
+    return [];
+  }
+}
+
+// ═══════ PROGRESS & LOGGING ═══════
+function updateProgress(pct) {
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progPct').textContent = Math.round(pct) + '%';
+}
+
+function addLog(type, msg) {
+  const log = document.getElementById('progLog');
+  const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  log.innerHTML += `<div class="log-entry ${type}"><span class="log-time">${time}</span><span class="log-msg">${msg}</span></div>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+// ═══════ RENDER RESULTS ═══════
+function renderResults() {
+  const f = APP.findings;
+  if (f.length === 0) {
+    document.getElementById('resultsSection').innerHTML = `
+      <div style="text-align:center;padding:60px 20px;color:var(--text-2);">
+        <div style="font-size:48px;margin-bottom:16px;">✅</div>
+        <h3 style="font-family:'Instrument Serif',serif;font-size:24px;color:var(--text-0);margin-bottom:8px;">No Issues Detected</h3>
+        <p>The AI analysis did not find significant issues. This could mean the contract is well-drafted, or try uploading more complete documents for a deeper analysis.</p>
+      </div>`;
+    return;
+  }
+
+  // Calculate score
+  const critCount = f.filter(x => x.severity === 'critical').length;
+  const highCount = f.filter(x => x.severity === 'high').length;
+  const medCount = f.filter(x => x.severity === 'medium').length;
+  const lowCount = f.filter(x => x.severity === 'low').length;
+  APP.score = Math.max(5, Math.min(100, 100 - critCount*14 - highCount*7 - medCount*3 - lowCount*1));
+
+  const scoreColor = APP.score >= 70 ? 'var(--green)' : APP.score >= 40 ? 'var(--yellow)' : 'var(--red)';
+  const circ = 2 * Math.PI * 55;
+  const offset = circ - (APP.score / 100) * circ;
+
+  let verdict, verdictDesc;
+  if (APP.score >= 80) { verdict = 'Low Risk'; verdictDesc = 'Few issues. Minor amendments recommended.'; }
+  else if (APP.score >= 60) { verdict = 'Moderate Risk'; verdictDesc = 'Several issues needing attention before execution.'; }
+  else if (APP.score >= 40) { verdict = 'High Risk'; verdictDesc = 'Significant vulnerabilities contractors can exploit.'; }
+  else { verdict = 'Critical Risk'; verdictDesc = 'Major flaws requiring substantial contract revision.'; }
+
+  const categories = [
+    { key: 'loophole', label: 'Loopholes', color: 'var(--red)' },
+    { key: 'arbitration', label: 'Arbitration', color: 'var(--orange)' },
+    { key: 'boq', label: 'BOQ Issues', color: 'var(--yellow)' },
+    { key: 'irc', label: 'IRC Compliance', color: 'var(--cyan)' },
+    { key: 'timeline', label: 'Timeline', color: '#C77DFF' },
+    { key: 'financial', label: 'Financial', color: 'var(--green)' }
+  ];
+
+  // Score banner
+  document.getElementById('scoreBanner').innerHTML = `
+    <div class="score-circle-wrap">
+      <div class="score-circle">
+        <svg viewBox="0 0 130 130" width="130" height="130">
+          <circle class="track" cx="65" cy="65" r="55"/>
+          <circle class="value-arc" cx="65" cy="65" r="55"
+            stroke="${scoreColor}" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+            style="transition:stroke-dashoffset 1.5s ease;"/>
+        </svg>
+        <div class="score-num">
+          <div class="big" style="color:${scoreColor}">${APP.score}</div>
+          <div class="sm">/ 100</div>
+        </div>
+      </div>
+      <div class="verdict-text" style="color:${scoreColor}">${verdict}</div>
+      <div class="verdict-desc">${verdictDesc}</div>
+    </div>
+    <div class="score-details">
+      ${categories.map(c => {
+        const count = f.filter(x => x.category === c.key).length;
+        return `<div class="stat-row">
+          <div class="stat-dot" style="background:${c.color}"></div>
+          <div class="stat-label">${c.label}</div>
+          <div class="stat-value" style="color:${c.color}">${count}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // Metrics
+  const riskLevel = critCount * 25 + highCount * 10 + medCount * 3;
+  const ircIssues = f.filter(x => x.category === 'irc').length;
+
+  document.getElementById('metricsRow').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Total Issues</div>
+      <div class="metric-value" style="color:var(--red)">${f.length}</div>
+      <div class="metric-desc">Across all categories</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Critical + High</div>
+      <div class="metric-value" style="color:var(--orange)">${critCount + highCount}</div>
+      <div class="metric-desc">Require immediate attention</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Risk Exposure</div>
+      <div class="metric-value" style="color:var(--yellow)">${riskLevel > 50 ? 'Very High' : riskLevel > 25 ? 'High' : riskLevel > 10 ? 'Moderate' : 'Low'}</div>
+      <div class="metric-desc">Potential contractor exploitation</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">IRC Compliance</div>
+      <div class="metric-value" style="color:${ircIssues === 0 ? 'var(--green)' : 'var(--orange)'}">${ircIssues === 0 ? 'OK' : ircIssues + ' Issues'}</div>
+      <div class="metric-desc">Against IRC codes & MORTH</div>
+    </div>`;
+
+  // Filter tabs
+  let tabsHTML = `<button class="filter-tab active" onclick="filterAll(this)">All <span class="filter-count">${f.length}</span></button>`;
+  categories.forEach(c => {
+    const count = f.filter(x => x.category === c.key).length;
+    if (count > 0) tabsHTML += `<button class="filter-tab" onclick="filterCat(this,'${c.key}')">${c.label} <span class="filter-count">${count}</span></button>`;
+  });
+  ['critical','high','medium','low'].forEach(s => {
+    const count = f.filter(x => x.severity === s).length;
+    if (count > 0) tabsHTML += `<button class="filter-tab" onclick="filterSev(this,'${s}')">${s.charAt(0).toUpperCase()+s.slice(1)} <span class="filter-count">${count}</span></button>`;
+  });
+  document.getElementById('filterBar').innerHTML = tabsHTML;
+
+  // Render findings
+  renderFindingCards(f);
+}
+
+function renderFindingCards(findings) {
+  const order = { critical: 0, high: 1, medium: 2, low: 3 };
+  findings.sort((a, b) => order[a.severity] - order[b.severity]);
+
+  const catLabels = {
+    loophole: '⚠️ Loophole', arbitration: '⚖️ Arbitration', boq: '📊 BOQ',
+    irc: '📐 IRC', timeline: '⏰ Timeline', financial: '💰 Financial'
+  };
+
+  document.getElementById('findingsContainer').innerHTML = findings.map(f => `
+    <div class="finding-card" onclick="this.classList.toggle('open')">
+      <div class="finding-main">
+        <div class="finding-meta">
+          <span class="sev sev-${f.severity}">${f.severity}</span>
+          <span>${catLabels[f.category] || f.category}</span>
+          <span>·</span>
+          <span>${f.id}</span>
+        </div>
+        <div class="finding-title">${f.title}</div>
+        <div class="finding-body">${f.body}</div>
+        <div class="finding-tags">
+          <span class="clause-tag">📎 ${f.clause}</span>
+          ${f.tags.map(t => `<span class="ftag">${t}</span>`).join('')}
+        </div>
+      </div>
+      <div class="finding-expand">
+        <div class="detail-block">
+          <div class="detail-heading">⚡ Impact & Risk</div>
+          <div class="detail-content">${f.impact}</div>
+        </div>
+        <div class="detail-block rec-box">
+          <div class="detail-heading">✅ Recommended Fix</div>
+          <div class="detail-content">${f.recommendation}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// Filters
+function filterAll(btn) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderFindingCards([...APP.findings]);
+}
+function filterCat(btn, cat) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderFindingCards(APP.findings.filter(f => f.category === cat));
+}
+function filterSev(btn, sev) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderFindingCards(APP.findings.filter(f => f.severity === sev));
+}
+
+function reAnalyze() {
+  document.getElementById('resultsSection').classList.remove('active');
+  document.getElementById('uploadSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ═══════ EXPORT ═══════
+function exportFullReport() {
+  let r = '══════════════════════════════════════════════════════════════\n';
+  r += '  BRO CONTRACT AGREEMENT — AI ANALYSIS REPORT\n';
+  r += '  Border Roads Organisation\n';
+  r += '  Generated: ' + new Date().toLocaleString() + '\n';
+  r += '  AI Provider: ' + APP.provider + ' / ' + APP.model + '\n';
+  r += '  Analysis Depth: ' + APP.depth + '\n';
+  r += '══════════════════════════════════════════════════════════════\n\n';
+  r += `CONTRACT HEALTH SCORE: ${APP.score}/100\n`;
+  r += `TOTAL ISSUES: ${APP.findings.length}\n`;
+  r += `CRITICAL: ${APP.findings.filter(f=>f.severity==='critical').length} | HIGH: ${APP.findings.filter(f=>f.severity==='high').length} | MEDIUM: ${APP.findings.filter(f=>f.severity==='medium').length} | LOW: ${APP.findings.filter(f=>f.severity==='low').length}\n\n`;
+
+  APP.findings.forEach((f, i) => {
+    r += `──────────────────────────────────────────\n`;
+    r += `[${f.id}] ${f.severity.toUpperCase()} — ${f.title}\n`;
+    r += `Category: ${f.category} | Clause: ${f.clause}\n\n`;
+    r += `ISSUE:\n${f.body}\n\n`;
+    r += `IMPACT:\n${f.impact}\n\n`;
+    r += `RECOMMENDATION:\n${f.recommendation}\n\n`;
+  });
+
+  downloadFile(r, 'BRO_Contract_Analysis_Report.txt', 'text/plain');
+}
+
+function exportCSV() {
+  let csv = 'ID,Severity,Category,Title,Clause,Issue,Impact,Recommendation,Tags\n';
+  APP.findings.forEach(f => {
+    csv += `"${f.id}","${f.severity}","${f.category}","${esc(f.title)}","${esc(f.clause)}","${esc(f.body)}","${esc(f.impact)}","${esc(f.recommendation)}","${f.tags.join('; ')}"\n`;
+  });
+  downloadFile(csv, 'BRO_Contract_Findings.csv', 'text/csv');
+}
+
+function esc(s) { return (s||'').replace(/"/g, '""'); }
+
+function downloadFile(content, name, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════ SAMPLE CONTRACT ═══════
+function loadSample() {
+  document.getElementById('pasteText').value = `CONTRACT AGREEMENT
+Project: Construction of Road from XYZ to ABC (BRO Project Beacon)
+Contract No: CE/BEACON/2024-25/R-042
+Contract Value: Rs. 18.5 Crores
+Completion Period: 24 months from date of start
+
+SCOPE OF WORK:
+Construction of 12.5 km double-lane road including earthwork, GSB, WMM, DBM, BC, CD structures, retaining walls and other ancillary works as directed by the Engineer-in-Charge and as per site conditions.
+
+CLAUSE 2 - VARIATIONS:
+The Engineer may order variations to the work. The contractor shall carry out all variations as instructed.
+
+CLAUSE 5 - PAYMENT:
+5.1 Mobilization advance of 10% of contract value shall be paid interest-free.
+5.2 Running bills shall be submitted monthly.
+5.3 Price escalation shall be applicable as per prevailing norms.
+
+CLAUSE 7 - TIME:
+7.1 The work shall be completed within 24 months.
+7.2 Extension of time may be granted for reasons beyond contractor's control.
+7.3 Penalty for delay shall be applicable.
+
+CLAUSE 10 - ARBITRATION:
+In case of dispute, the matter shall be referred to arbitration. The arbitrator shall be appointed by the authority.
+
+CLAUSE 12 - FORCE MAJEURE:
+In case of natural calamity, act of God, or any unforeseen event, the contractor shall be entitled to extension of time and additional cost as required.
+
+BILL OF QUANTITIES (Summary):
+Item 1: Earthwork in cutting - 45,000 cum - Rs. 385/cum
+Item 2: GSB Grading-II - 8,500 cum - Rs. 1,250/cum  
+Item 3: WMM - 6,200 cum - Rs. 1,850/cum
+Item 4: DBM (Grade-II) - 3,100 cum - Rs. 7,200/cum
+Item 5: BC (Bituminous Concrete) - 1,800 cum - Rs. 8,500/cum
+Item 6: RCC pipe culverts - Lot - Rs. 45,00,000 (Lump Sum)
+Item 7: Stone masonry retaining wall - 2,500 cum - Rs. 4,800/cum
+Item 8: Miscellaneous items - Lot - Rs. 25,00,000 (Lump Sum)
+
+TECHNICAL SPECIFICATIONS:
+All works shall be carried out as per MORTH specifications and as directed by Engineer. Material shall conform to relevant IS codes. Bituminous work shall use VG-30 grade bitumen.
+
+GENERAL CONDITIONS:
+As per CPWD General Conditions of Contract 2022 with amendments.`;
+}
+</script>
+</body>
+</html>
